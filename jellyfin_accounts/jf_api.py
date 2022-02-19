@@ -1,6 +1,5 @@
 # Jellyfin API client
-import requests
-import time
+import json, requests, time
 
 
 class Error(Exception):
@@ -66,18 +65,18 @@ class Jellyfin:
         self.userCacheAge = time.time() - self.timeout - 1
         self.userCachePublicAge = self.userCacheAge
         self.useragent = f"{self.client}/{self.version}"
-        self.auth = "MediaBrowser "
+        self.auth = "MediaBrowser , "
         self.auth += f"Client={self.client}, "
         self.auth += f"Device={self.device}, "
         self.auth += f"DeviceId={self.deviceId}, "
         self.auth += f"Version={self.version}"
         self.header = {
-            "Accept": "application/json",
-            "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "X-Application": f"{self.client}/{self.version}",
-            "Accept-Charset": "UTF-8,*",
-            "Accept-encoding": "gzip",
-            "User-Agent": self.useragent,
+            # "Accept": "application/json",
+            "Content-type": "application/json",
+            # "X-Application": f"{self.client}/{self.version}",
+            # "Accept-Charset": "UTF-8,*",
+            # "Accept-encoding": "gzip",
+            # "User-Agent": self.useragent,
             "X-Emby-Authorization": self.auth,
         }
         try:
@@ -162,15 +161,18 @@ class Jellyfin:
         :param username: Plaintext username.
         :param password: Plaintext password.
         """
+        data = json.dumps(
+            {"Username": username, "Pw": password}
+        ).encode()
         response = requests.post(
             f"{self.server}/Users/AuthenticateByName",
             headers=self.header,
-            params={"Username": username, "Pw": password},
+            data=data,
         )
         if response.status_code == 200:
-            json = response.json()
-            self.userId = json["User"]["Id"]
-            self.accessToken = json["AccessToken"]
+            j = response.json()
+            self.userId = j["User"]["Id"]
+            self.accessToken = j["AccessToken"]
             self.auth = "MediaBrowser "
             self.auth += f"Client={self.client}, "
             self.auth += f"Device={self.device}, "
