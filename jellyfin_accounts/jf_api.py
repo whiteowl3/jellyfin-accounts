@@ -119,7 +119,9 @@ class Jellyfin:
                 response = requests.get(
                     f"{self.server}/Users",
                     headers=self.header,
-                    params={"Username": self.username, "Pw": self.password},
+                    data=json.dumps(
+                        {"Username": self.username, "Pw": self.password}
+                    ).encode()
                 )
                 if response.status_code == 200:
                     response = response.json()
@@ -161,13 +163,12 @@ class Jellyfin:
         :param username: Plaintext username.
         :param password: Plaintext password.
         """
-        data = json.dumps(
-            {"Username": username, "Pw": password}
-        ).encode()
         response = requests.post(
             f"{self.server}/Users/AuthenticateByName",
             headers=self.header,
-            data=data,
+            data=json.dumps(
+            {"Username": username, "Pw": password}
+        ).encode(),
         )
         if response.status_code == 200:
             j = response.json()
@@ -179,7 +180,8 @@ class Jellyfin:
             self.auth += f"DeviceId={self.deviceId}, "
             self.auth += f"Version={self.version}"
             self.auth += f", Token={self.accessToken}"
-            self.header["X-Emby-Authorization"] = self.auth
+            self.header["x-emby-authorization"] = self.auth
+            self.header['x-mediabrowser-token'] = self.accessToken
             self.info = requests.get(
                 f"{self.server}/System/Info", headers=self.header
             ).json()
@@ -200,7 +202,7 @@ class Jellyfin:
         return requests.post(
             f"{self.server}/Users/" + userId + "/Policy",
             headers=self.header,
-            params=policy,
+            data=json.dumps(policy).encode,
         )
 
     def newUser(self, username: str, password: str):
@@ -210,7 +212,9 @@ class Jellyfin:
         response = requests.post(
             f"{self.server}/Users/New",
             headers=self.header,
-            params={"Name": username, "Password": password},
+            data=json.dumps(
+                {"Name": username, "Password": password}
+            ).encode(),
         )
         if response.status_code == 401:
             if hasattr(self, "username") and hasattr(self, "password"):
@@ -242,7 +246,7 @@ class Jellyfin:
         resp = requests.post(
             f"{self.server}/Users/" + userId + "/Configuration",
             headers=self.header,
-            params=configuration,
+            data=json.dumps(configuration).encode()
         )
         if resp.status_code == 200 or resp.status_code == 204:
             return True
