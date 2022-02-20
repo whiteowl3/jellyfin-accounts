@@ -17,25 +17,25 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6"
-pyopenssl = "^19.1.0"
-flask = "^1.1.2"
+python = ">=3.6"
+pyopenssl = ">=19.1.0"
+flask = ">=2.0.3"
 flask-httpauth = ">= 3.3.0"
-requests = "^2.23.0"
-itsdangerous = "^1.1.0"
-passlib = "^1.7.2"
-pytz = "^2020.1"
-python-dateutil = "^2.8.1"
-watchdog = "^0.10.2"
-waitress = "^1.4.3"
-packaging = "^20.4"
-psutil = "^5.7.2"
+requests = ">=2.23.0"
+itsdangerous = ">=1.1.0"
+passlib = ">=1.7.2"
+pytz = ">=2020.1"
+python-dateutil = ">=2.8.1"
+watchdog = ">=0.10.2"
+waitress = ">=1.4.3"
+packaging = ">=20.4"
+psutil = ">=5.7.2"
 
 [tool.poetry.dev-dependencies]
-neovim = "^0.3.1"
-black = "^19.10b0"
-taskipy = "^1.2.1"
-libsass = "^0.20.0"
+neovim = ">=0.3.1"
+black = ">=19.10b0"
+taskipy = ">=1.2.1"
+libsass = ">=0.20.0"
 
 [tool.poetry.scripts]
 jf-accounts = 'jellyfin_accounts:main'

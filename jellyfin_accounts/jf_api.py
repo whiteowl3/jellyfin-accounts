@@ -1,6 +1,5 @@
 # Jellyfin API client
-import requests
-import time
+import json, requests, time
 
 
 class Error(Exception):
@@ -66,18 +65,18 @@ class Jellyfin:
         self.userCacheAge = time.time() - self.timeout - 1
         self.userCachePublicAge = self.userCacheAge
         self.useragent = f"{self.client}/{self.version}"
-        self.auth = "MediaBrowser "
+        self.auth = "MediaBrowser , "
         self.auth += f"Client={self.client}, "
         self.auth += f"Device={self.device}, "
         self.auth += f"DeviceId={self.deviceId}, "
         self.auth += f"Version={self.version}"
         self.header = {
-            "Accept": "application/json",
-            "Content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "X-Application": f"{self.client}/{self.version}",
-            "Accept-Charset": "UTF-8,*",
-            "Accept-encoding": "gzip",
-            "User-Agent": self.useragent,
+            # "Accept": "application/json",
+            "Content-type": "application/json",
+            # "X-Application": f"{self.client}/{self.version}",
+            # "Accept-Charset": "UTF-8,*",
+            # "Accept-encoding": "gzip",
+            # "User-Agent": self.useragent,
             "X-Emby-Authorization": self.auth,
         }
         try:
@@ -120,7 +119,9 @@ class Jellyfin:
                 response = requests.get(
                     f"{self.server}/Users",
                     headers=self.header,
-                    params={"Username": self.username, "Pw": self.password},
+                    data=json.dumps(
+                        {"Username": self.username, "Pw": self.password}
+                    ).encode()
                 )
                 if response.status_code == 200:
                     response = response.json()
@@ -165,19 +166,22 @@ class Jellyfin:
         response = requests.post(
             f"{self.server}/Users/AuthenticateByName",
             headers=self.header,
-            params={"Username": username, "Pw": password},
+            data=json.dumps(
+            {"Username": username, "Pw": password}
+        ).encode(),
         )
         if response.status_code == 200:
-            json = response.json()
-            self.userId = json["User"]["Id"]
-            self.accessToken = json["AccessToken"]
+            j = response.json()
+            self.userId = j["User"]["Id"]
+            self.accessToken = j["AccessToken"]
             self.auth = "MediaBrowser "
             self.auth += f"Client={self.client}, "
             self.auth += f"Device={self.device}, "
             self.auth += f"DeviceId={self.deviceId}, "
             self.auth += f"Version={self.version}"
             self.auth += f", Token={self.accessToken}"
-            self.header["X-Emby-Authorization"] = self.auth
+            self.header["x-emby-authorization"] = self.auth
+            self.header['x-mediabrowser-token'] = self.accessToken
             self.info = requests.get(
                 f"{self.server}/System/Info", headers=self.header
             ).json()
@@ -198,7 +202,7 @@ class Jellyfin:
         return requests.post(
             f"{self.server}/Users/" + userId + "/Policy",
             headers=self.header,
-            params=policy,
+            data=json.dumps(policy).encode,
         )
 
     def newUser(self, username: str, password: str):
@@ -208,7 +212,9 @@ class Jellyfin:
         response = requests.post(
             f"{self.server}/Users/New",
             headers=self.header,
-            params={"Name": username, "Password": password},
+            data=json.dumps(
+                {"Name": username, "Password": password}
+            ).encode(),
         )
         if response.status_code == 401:
             if hasattr(self, "username") and hasattr(self, "password"):
@@ -240,7 +246,7 @@ class Jellyfin:
         resp = requests.post(
             f"{self.server}/Users/" + userId + "/Configuration",
             headers=self.header,
-            params=configuration,
+            data=json.dumps(configuration).encode()
         )
         if resp.status_code == 200 or resp.status_code == 204:
             return True

@@ -1,11 +1,11 @@
 # Handles authentication
 
 from flask_httpauth import HTTPBasicAuth
-from itsdangerous import (
-    TimedJSONWebSignatureSerializer as Serializer,
-    BadSignature,
-    SignatureExpired,
+from cryptography.fernet import (
+    Fernet,
+    InvalidToken,
 )
+import hashlib, base64, json
 from passlib.apps import custom_app_context as pwd_context
 import uuid
 from jellyfin_accounts import config, app, g
@@ -45,27 +45,31 @@ class Account:
             except Jellyfin.AuthenticationError:
                 return False
 
-    def generate_token(self, expiration=1200):
-        s = Serializer(app.config["SECRET_KEY"], expires_in=expiration)
+    def generate_token(self):
+        hasher = hashlib.blake2b(digest_size=32)
+        hasher.update(app.config["SECRET_KEY"].encode())
+        f = Fernet(base64.urlsafe_b64encode(hasher.digest()).decode())
+        token = f.encrypt(json.dumps({"id": self.id}).encode())
         log.debug(self.id)
-        return s.dumps({"id": self.id})
+        return token
 
     @staticmethod
     def verify_token(token, accounts):
         log.debug(f"verifying token {token}")
-        s = Serializer(app.config["SECRET_KEY"])
+        hasher = hashlib.blake2b(digest_size=32)
+        hasher.update(app.config["SECRET_KEY"].encode())
+        f = Fernet(base64.urlsafe_b64encode(hasher.digest()).decode())
         try:
-            data = s.loads(token)
-        except SignatureExpired:
-            return None
-        except BadSignature:
+            data = json.loads(f.decrypt(token.encode(), ttl=1200))
+        except InvalidToken:
             return None
         if config.getboolean("ui", "jellyfin_login"):
             for account in accounts:
                 if data["id"] == accounts[account].id:
                     return account
         else:
-            return accounts["adminAccount"]
+            if data["id"] == accounts["adminAccount"].id:
+                return accounts["adminAccount"]
 
 
 auth = HTTPBasicAuth()
